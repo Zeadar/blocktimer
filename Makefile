@@ -2,7 +2,7 @@ CC = gcc
 
 OBJDIR = build
 TARGET = $(OBJDIR)/out
-SRCS = main.c libmemhandle/strset.c libmemhandle/slice.c libmemhandle/sarray.c libmemhandle/hashy.c
+SRCS = fetch_addresses.c main.c libmemhandle/slice.c libmemhandle/sarray.c libmemhandle/hashy.c
 OBJS = $(addprefix $(OBJDIR)/, $(SRCS:.c=.o))
 # OBJS = $(patsubst %.c,$(OBJDIR)/%.o,$(SRCS))
 
