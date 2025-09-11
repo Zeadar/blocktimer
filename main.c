@@ -8,7 +8,7 @@ void handle_addrs(char *addr) {
     printf("addr: %s\n", addr);
 }
 
-const char *domain = "youtube.com";
+const char *domain = "www.youtube.com";
 
 int main() {
     struct hostent *he;
@@ -21,11 +21,14 @@ int main() {
     addr_list = (struct in_addr **) he->h_addr_list;
     printf("h_name: %s\nh_length: %d\n", he->h_name, he->h_length);
 
-    Sarray addresses = sarray_create();
+    StrSet addresses = strset_create();
+
     for (int i = 0; addr_list[i]; ++i) {
         char *str = inet_ntoa(*addr_list[i]);
-        sarray_push(&addresses, str);
+        printf("adding; %s\n", str);
+        strset_set(&addresses, str);
     }
-    sarray_foreach(&addresses, handle_addrs);
-    sarray_destroy(&addresses);
+
+    sarray_foreach(&addresses.strings, handle_addrs);
+    strset_destroy(&addresses);
 }
