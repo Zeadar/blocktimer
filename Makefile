@@ -2,17 +2,19 @@ CC = gcc
 
 OBJDIR = build
 TARGET = $(OBJDIR)/out
-SRCS = fetch_addresses.c main.c libmemhandle/slice.c libmemhandle/sarray.c libmemhandle/hashy.c
+SRCS = waitforwakeup.c fetch_addresses.c main.c libmemhandle/slice.c libmemhandle/sarray.c libmemhandle/hashy.c
 OBJS = $(addprefix $(OBJDIR)/, $(SRCS:.c=.o))
 # OBJS = $(patsubst %.c,$(OBJDIR)/%.o,$(SRCS))
+CFLAGS=$(shell pkg-config --cflags libelogind)
+LDFLAGS=$(shell pkg-config --libs libelogind) -lpthread
 
 all: debug
 
 debug: CFLAGS += -Wextra -Wall -g -O0
-debug: $(OBJDIR) $(TARGET)
+debug: $(LDFLAGS) $(OBJDIR) $(TARGET)
 
-release: CFLAGS += -O3 -march=native
-release: $(OBJDIR) $(TARGET)
+release: CFLAGS += -O3
+release: $(LDFLAGS) $(OBJDIR) $(TARGET)
 	strip $(TARGET)
 	rm -v $(OBJDIR)/*.o
 	
