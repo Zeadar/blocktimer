@@ -24,6 +24,9 @@ int main() {
     for (;;) {
         Map addresses = fetch_addresses(&domains, &temp_error);
 
+        hashy_foreach(&addresses, handle_addrs);
+        hashy_destroy(&addresses);
+
         if (temp_error) {
             fprintf(stderr,
                     "Temporary failure detected. Will try again in %d seconds...\n",
@@ -34,9 +37,6 @@ int main() {
             thrd_sleep(&wait_duration, 0);
             continue;
         }
-
-        hashy_foreach(&addresses, handle_addrs);
-        hashy_destroy(&addresses);
 
         thrd_create(&wait_for_wakeup_thrd, wait_for_wakeup, 0);
         int wait_result;
