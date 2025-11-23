@@ -7,7 +7,7 @@
 #include <string.h>
 #include <sys/socket.h>
 
-Map fetch_addresses(Sarray *domains) {
+Map fetch_addresses(Sarray *domains, int *temp_error) {
     struct addrinfo hints, *response, *r_ptr;
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
@@ -19,7 +19,12 @@ Map fetch_addresses(Sarray *domains) {
         char *domain = sarray_get(domains, i);
 
         int status = getaddrinfo(domain, 0, &hints, &response);
+
         if (status != 0) {
+            if (status == EAI_AGAIN) {
+                *temp_error = 1;
+            }
+
             fprintf(stderr, "ERROR (%s): %s\n",
                     domain, gai_strerror(status));
             continue;

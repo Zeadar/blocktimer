@@ -11,10 +11,10 @@ LDFLAGS=$(shell pkg-config --libs libelogind) -lpthread
 all: debug
 
 debug: CFLAGS += -Wextra -Wall -g -O0
-debug: $(LDFLAGS) $(OBJDIR) $(TARGET)
+debug: $(OBJDIR) $(TARGET)
 
 release: CFLAGS += -O3
-release: $(LDFLAGS) $(OBJDIR) $(TARGET)
+release: $(OBJDIR) $(TARGET)
 	strip $(TARGET)
 	rm -v $(OBJDIR)/*.o
 	

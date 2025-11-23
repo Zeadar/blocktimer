@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <threads.h>
 
+#define WAIT_ON_FAIL_TIME_SEC 10
+
 void handle_addrs(char *key, void *value) {
     int *addr_type = (int *) value;
     printf("Type: %d, Addr: %s\n", *addr_type, key);
@@ -16,10 +18,23 @@ int main() {
     sarray_push(&domains, "google.com");
     sarray_push(&domains, "www.google.com");
 
-    thrd_t wait_for_wakeup_thrd = { 0 };
+    thrd_t wait_for_wakeup_thrd = 0;    // Appearently this is an unsigned long
+    int temp_error = 0;
 
     for (;;) {
-        Map addresses = fetch_addresses(&domains);
+        Map addresses = fetch_addresses(&domains, &temp_error);
+
+        if (temp_error) {
+            fprintf(stderr,
+                    "Temporary failure detected. Will try again in %d seconds...\n",
+                    WAIT_ON_FAIL_TIME_SEC);
+            temp_error = 0;     // Happy I didn't forget this
+            struct timespec wait_duration = { 0 };
+            wait_duration.tv_sec = WAIT_ON_FAIL_TIME_SEC;
+            thrd_sleep(&wait_duration, 0);
+            continue;
+        }
+
         hashy_foreach(&addresses, handle_addrs);
         hashy_destroy(&addresses);
 
