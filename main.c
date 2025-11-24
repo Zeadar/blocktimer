@@ -10,19 +10,20 @@ void handle_addrs(char *key, void *value) {
     printf("Type: %d, Addr: %s\n", *addr_type, key);
 }
 
-int main() {
-    Sarray domains = sarray_create();
-    sarray_push(&domains, "youtube.com");
-    sarray_push(&domains, "www.youtube.com");
-    sarray_push(&domains, "kalleponken");
-    sarray_push(&domains, "google.com");
-    sarray_push(&domains, "www.google.com");
+void print_domains(char *line) {
+    printf("%s\n", line);
+}
 
+int main() {
     thrd_t wait_for_wakeup_thrd = 0;    // Appearently this is an unsigned long
     int temp_error = 0;
+    Slice block_units = parse_config();
+    BlockUnit *current_config = slice_get_ptr(&block_units, 0);
+    sarray_foreach(&current_config->domains, print_domains);
 
     for (;;) {
-        Map addresses = fetch_addresses(&domains, &temp_error);
+        Map addresses =
+            fetch_addresses(&current_config->domains, &temp_error);
 
         hashy_foreach(&addresses, handle_addrs);
         hashy_destroy(&addresses);
@@ -50,5 +51,8 @@ int main() {
         }
     }
 
-    sarray_destroy(&domains);
+    // sarray_destroy(domains);
+    slice_destroy(&block_units);
+
+    return 0;
 }
