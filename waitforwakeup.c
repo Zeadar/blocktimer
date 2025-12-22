@@ -1,50 +1,59 @@
+#include "blocktimer.h"
 #include <stdio.h>
 #include <string.h>
 #include <systemd/sd-bus.h>
 
-int wait_for_wakeup() {
+struct result wait_for_wakeup() {
     sd_bus *bus;
     sd_bus_message *message;
+    int ret_val;
 
-    int result;
+    struct result result = {
+        .status = OK_GENERIC,
+        .comment = 0,
+    };
 
-    result = sd_bus_default_system(&bus);
+    ret_val = sd_bus_default_system(&bus);
 
-    if (result < 0) {
-        fprintf(stderr, "DBus connection failed: %s\n", strerror(-result));
-        return 1;
+    if (ret_val < 0) {
+        fprintf(stderr, "DBus connection failed: %s\n",
+                strerror(-ret_val));
+        result.status = ERROR_DBUS_CONNECTION;
+        result.comment = strerror(-ret_val);
+        return result;
     }
 
-    result = sd_bus_add_match(bus,
-                              NULL,
-                              "type='signal',"
-                              "sender='org.freedesktop.login1',"
-                              "interface='org.freedesktop.login1.Manager',"
-                              "member='PrepareForSleep'", 0, 0);
+    ret_val = sd_bus_add_match(bus,
+                               NULL,
+                               "type='signal',"
+                               "sender='org.freedesktop.login1',"
+                               "interface='org.freedesktop.login1.Manager',"
+                               "member='PrepareForSleep'", 0, 0);
 
-    if (result < 0) {
-        fprintf(stderr, "Failed to add match: %s\n", strerror(-result));
+    if (ret_val < 0) {
         sd_bus_close_unref(bus);
-        return 2;
+        result.status = ERROR_DBUS_MATCH;
+        result.comment = strerror(-ret_val);
+        return result;
     }
 
     for (;;) {
-        result = sd_bus_process(bus, &message);
+        ret_val = sd_bus_process(bus, &message);
 
-        if (result < 0) {
-            fprintf(stderr, "Failed to start bus process: %s\n",
-                    strerror(-result));
-            return 3;
+        if (ret_val < 0) {
+            result.status = ERROR_DBUS_START;
+            result.comment = strerror(-ret_val);
+            return result;
         }
 
-
-        if (result == 0) {
+        if (ret_val == 0) {
             //No message processed, will block until message recieved
-            result = sd_bus_wait(bus, ~0);
+            ret_val = sd_bus_wait(bus, ~0);
 
-            if (result < 0) {
-                fprintf(stderr, "Waiting failed: %s\n", strerror(-result));
-                return 5;
+            if (ret_val < 0) {
+                result.status = ERROR_DBUS_WAIT;
+                result.comment = strerror(-ret_val);
+                return result;
             }
             continue;
         }
@@ -57,13 +66,13 @@ int wait_for_wakeup() {
              "PrepareForSleep")) {
 
             int sleeping = -1;
-            result = sd_bus_message_read(message, "b", &sleeping);
+            ret_val = sd_bus_message_read(message, "b", &sleeping);
             sd_bus_message_unref(message);
 
-            if (result < 0) {
-                fprintf(stderr, "Could not parse message: %s\n",
-                        strerror(-result));
-                return 4;
+            if (ret_val < 0) {
+                result.status = ERROR_DBUS_PARSE;
+                result.comment = strerror(-ret_val);
+                return result;
             }
 
             if (sleeping == 0) {        // PrepareForSleep returns "False" upon waking up
@@ -77,5 +86,5 @@ int wait_for_wakeup() {
 
     sd_bus_flush_close_unref(bus);
 
-    return 0;
+    return result;
 }

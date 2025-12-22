@@ -91,8 +91,10 @@ Slice parse_config() {
     }
 
     blocklist->domains = sarray_create();
-    blocklist->start = extract_time(config, buf, &buf_size);
-    blocklist->stop = extract_time(config, buf, &buf_size);
+    // blocklist->start = extract_time(config, buf, &buf_size);
+    // blocklist->stop = extract_time(config, buf, &buf_size);
+    extract_time(config, buf, &buf_size);
+    extract_time(config, buf, &buf_size);
 
     while ((n = getline(&buf, &buf_size, config)) != EOF) {
         n = strip_fluff(buf);

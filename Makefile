@@ -2,7 +2,7 @@ CC = gcc
 
 OBJDIR = build
 TARGET = $(OBJDIR)/out
-SRCS = parse_config.c waitforwakeup.c fetch_addresses.c main.c libmemhandle/slice.c libmemhandle/sarray.c libmemhandle/hashy.c
+SRCS = handle_errors.c parse_config.c waitforwakeup.c fetch_addresses.c main.c libmemhandle/slice.c libmemhandle/sarray.c libmemhandle/hashy.c
 OBJS = $(addprefix $(OBJDIR)/, $(SRCS:.c=.o))
 # OBJS = $(patsubst %.c,$(OBJDIR)/%.o,$(SRCS))
 CFLAGS=$(shell pkg-config --cflags libelogind)

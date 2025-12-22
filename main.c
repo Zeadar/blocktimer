@@ -1,7 +1,7 @@
 #include "libmemhandle/libmemhandle.h"
 #include "blocktimer.h"
 #include <stdio.h>
-#include <threads.h>
+#include <unistd.h>
 
 #define WAIT_ON_FAIL_TIME_SEC 10
 
@@ -19,43 +19,40 @@ void print_domains(char *line) {
     printf("%s\n", line);
 }
 
+// TODO: replace std thrd with pthread
 int main() {
-    thrd_t wait_for_wakeup_thrd = 0;    // Appearently this is an unsigned long
-    int temp_error = 0;
+    // thrd_t wait_for_wakeup_thrd = 0;    // Appearently this is an unsigned long
+    struct result wait_result = { 0 };
     Slice block_units = parse_config();
     BlockUnit *current_config = slice_get_ptr(&block_units, 0);
     sarray_foreach(&current_config->domains, print_domains);
 
     for (;;) {
-        Map addresses =
-            fetch_addresses(&current_config->domains, &temp_error);
+        MapResult mapres = fetch_addresses(&current_config->domains);
+        handle_errors((struct result *) &mapres, OK_MAP);
 
-        hashy_foreach(&addresses, handle_addrs);
-        hashy_destroy(&addresses);
+        Map *addresses = &mapres.mapresult.map;
 
-        if (temp_error) {
+        hashy_foreach(addresses, handle_addrs);
+        hashy_destroy(addresses);
+
+        if (mapres.status == ERROR_TEMPORARY) {
             fprintf(stderr,
                     "Temporary failure detected. Will try again in %d seconds...\n",
                     WAIT_ON_FAIL_TIME_SEC);
-            temp_error = 0;     // Happy I didn't forget this
-            struct timespec wait_duration = { 0 };
-            wait_duration.tv_sec = WAIT_ON_FAIL_TIME_SEC;
-            thrd_sleep(&wait_duration, 0);
+            sleep(WAIT_ON_FAIL_TIME_SEC);
             continue;
         }
-
-        thrd_create(&wait_for_wakeup_thrd, wait_for_wakeup, 0);
-        int wait_result;
-        thrd_join(wait_for_wakeup_thrd, &wait_result);
+        // thrd_create(&wait_for_wakeup_thrd, wait_for_wakeup, 0);
+        // thrd_join(wait_for_wakeup_thrd, &wait_result);
+        wait_result = wait_for_wakeup();
+        // break;                  //temp
         printf("Detected system wake up. Resetting program state.\n");
 
-        if (wait_result != 0) {
-            fprintf(stderr, "Thread wating for DBus failed, exiting: %d\n",
-                    wait_result);
-            break;
-        }
+        handle_errors(&wait_result, OK_GENERIC);
     }
 
+    // unreachable
     slice_foreach(&block_units, destroy_block_unit);
     slice_destroy(&block_units);
 
