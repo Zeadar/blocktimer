@@ -21,7 +21,7 @@ MapResult fetch_addresses(Sarray *domains) {
 
         if (status != 0) {
             if (status == EAI_AGAIN) {
-                mapres.result.status = ERROR_TEMPORARY;
+                mapres.result.status = ERROR_ADDRINFO_TEMPORARY;
                 mapres.result.comment = gai_strerror(status);
                 break;
             }
