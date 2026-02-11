@@ -1,5 +1,11 @@
 #pragma once
 #include "libmemhandle/libmemhandle.h"
+#include <pthread.h>
+
+enum event_type {
+    START,
+    STOP,
+};
 
 enum status {
     OK_GENERIC,
@@ -19,6 +25,25 @@ enum status {
     ERROR_CONF_FILE_NOT_FOUND,
     ERROR_CONF_PARSE,
     ERROR_CONF_PARSE_TIME,
+};
+
+struct block_unit {
+    Sarray domains;
+    int start;
+    int stop;
+    int days;
+};
+
+struct event_unit {
+    Map addresses;
+    int time;
+    int days;
+    enum event_type type;
+};
+
+struct thrd_data {
+    pthread_t *thrd_id;
+    Slice *domains;
 };
 
 struct result {
@@ -41,7 +66,7 @@ struct sliceresult {
     Slice slice;
 };
 
-typedef union{
+typedef union {
     enum status status;
     struct result result;
     struct intresult intresult;
@@ -59,12 +84,6 @@ typedef union {
     struct mapresult mapresult;
 } MapResult;
 
-typedef struct {
-    Sarray domains;
-    int start;
-    int stop;
-    int days;
-} BlockUnit;
 
 MapResult fetch_addresses(Sarray *domains);
 struct result wait_for_wakeup();

@@ -123,7 +123,7 @@ SliceResult parse_config() {
     char *buf = malloc(buf_size);
     SliceResult sr = { 0 };
     sr.status = OK_SLICE;
-    sr.sliceresult.slice = slice_new(BlockUnit);
+    sr.sliceresult.slice = slice_new(struct block_unit);
 
     if (config == 0) {
         sr.result.status = ERROR_CONF_FILE_NOT_FOUND;
@@ -133,7 +133,7 @@ SliceResult parse_config() {
         return sr;
     }
     // TODO: rework for for additional blocklists
-    BlockUnit *blocklist = slice_allocate(&sr.sliceresult.slice);
+    struct block_unit *blocklist = slice_allocate(&sr.sliceresult.slice);
     blocklist->domains = sarray_create();
 
     while ((n = getline(&buf, &buf_size, config)) != EOF) {
