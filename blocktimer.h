@@ -79,6 +79,6 @@ struct result wait_for_wakeup();
 SliceResult parse_config();
 void handle_errors(const struct result *result, enum status expect);
 struct result add(struct event_unit *eu);
-struct result del(struct event_unit *eu);
+void del(struct event_unit *eu);
 
 extern int is_not_root;

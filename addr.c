@@ -7,8 +7,7 @@
 #define IPV4 "iptables"
 #define IPV6 "ip6tables"
 
-static const char f_check_rule[] =
-    "%s -C OUTPUT -d %s -j REJECT 2>/dev/null";
+static const char f_check_rule[] = "%s -C OUTPUT -d %s -j REJECT 2>/dev/null";
 static const char f_add_rule[] = "%s -A OUTPUT -d %s -j REJECT";
 static const char f_remove_rule[] = "%s -D OUTPUT -d %s -j REJECT";
 
@@ -70,8 +69,7 @@ struct result add(struct event_unit *eu) {
     MapResult mr = { 0 };
 
     if (eu->addresses.map != 0) {       // addresses is initialized
-        mr.result.status = ERROR_GENERIC;
-        mr.result.comment = "add(): Addresses map was already initialized";
+        mr.status = OK_GENERIC;
         return mr.result;
     }
 
@@ -87,17 +85,10 @@ struct result add(struct event_unit *eu) {
     return mr.result;
 }
 
-struct result del(struct event_unit *eu) {
-    struct result r = { 0 };
-
-    if (eu->addresses.map == 0) {
-        r.status = ERROR_GENERIC;
-        r.comment = "del(): Addresses map was not initialized";
-        return r;
-    }
+void del(struct event_unit *eu) {
+    if (eu->addresses.map == 0)
+        return;
 
     hashy_foreach(&eu->addresses, del_addr);
-
-    r.status = OK_GENERIC;
-    return r;
+    hashy_destroy(&eu->addresses);
 }

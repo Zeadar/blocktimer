@@ -17,12 +17,6 @@ Slice block_units;
 Slice event_units;
 int is_not_root;
 
-void init_and_link_events_to_blocks(void *bu) {
-    struct event_unit *e = slice_allocate(&event_units);
-    *e = (const struct event_unit) { 0 };
-    e->block_unit = bu;
-}
-
 void *scheduler(void *eu) {
     struct event_unit *event_unit = eu;
     time_t now_epoch;
@@ -46,27 +40,49 @@ void *scheduler(void *eu) {
                 handle_errors(&r, OK_GENERIC);
                 sleep_time = event_unit->block_unit->stop - now;
             } else if (event_unit->block_unit->stop <= now) {   // off
-                if (event_unit->addresses.map != 0) {
-                    r = del(event_unit);
-                    handle_errors(&r, OK_GENERIC);
-                    hashy_destroy(&event_unit->addresses);
-                }
+                del(event_unit);
                 sleep_time =
                     (DAY_SEC - now) + event_unit->block_unit->start;
             } else {            // off
-                if (event_unit->addresses.map != 0) {
-                    r = del(event_unit);
-                    handle_errors(&r, OK_GENERIC);
-                    hashy_destroy(&event_unit->addresses);
-                }
+                del(event_unit);
                 sleep_time = event_unit->block_unit->start - now;
             }
         } else {                // Spanning across days
-
+            if (now < event_unit->block_unit->stop) {
+                r = add(event_unit);
+                if (r.status == ERROR_ADDRINFO_TEMPORARY) {
+                    fprintf(stderr, F_TEMP_FAIL, WAIT_ON_FAIL_TIME_SEC);
+                    sleep(WAIT_ON_FAIL_TIME_SEC);
+                    continue;
+                }
+                handle_errors(&r, OK_GENERIC);
+                sleep_time = event_unit->block_unit->stop - now;
+            } else if (now >= event_unit->block_unit->start) {
+                r = add(event_unit);
+                if (r.status == ERROR_ADDRINFO_TEMPORARY) {
+                    fprintf(stderr, F_TEMP_FAIL, WAIT_ON_FAIL_TIME_SEC);
+                    sleep(WAIT_ON_FAIL_TIME_SEC);
+                    continue;
+                }
+                handle_errors(&r, OK_GENERIC);
+                sleep_time =
+                    (DAY_SEC - now) + event_unit->block_unit->stop;
+            } else {
+                del(event_unit);
+                sleep_time = event_unit->block_unit->start - now;
+            }
         }
-        printf("Sleeping for %d seconds...\n", sleep_time);
+        // printf("Sleeping for %.2d:%.2d:%.2d\n",
+        //        sleep_time / 60 / 60,
+        //        (sleep_time / 60) % 60, (sleep_time % 60) % 60);
         sleep(sleep_time);
     }
+}
+
+void init_and_link_events_to_blocks(void *bu) {
+    struct event_unit *e = slice_allocate(&event_units);
+    *e = (const struct event_unit) { 0 };
+    e->block_unit = bu;
 }
 
 void destroy_domains_in_block_units(void *bu) {
