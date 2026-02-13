@@ -90,7 +90,7 @@ void destroy_domains_in_block_units(void *bu) {
     sarray_destroy(&block_unit->domains);
 }
 
-void destroy_addresses_in_block_events(void *eu) {
+void destroy_addresses_in_event_units(void *eu) {
     struct event_unit *event_unit = eu;
     if (event_unit->addresses.map)
         hashy_destroy(&event_unit->addresses);
@@ -115,7 +115,7 @@ void exit_handler(int sig) {
         struct event_unit *eu = slice_get_ptr(&event_units, si);
         del(eu);
     }
-    slice_foreach(&event_units, destroy_addresses_in_block_events);
+    slice_foreach(&event_units, destroy_addresses_in_event_units);
     slice_destroy(&event_units);
     slice_foreach(&block_units, destroy_domains_in_block_units);
     slice_destroy(&block_units);
