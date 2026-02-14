@@ -182,13 +182,16 @@ SliceResult parse_config() {
         }
     }
 
+    for (slice_index si = 0; si != slice_size(&sr.sliceresult.slice); ++si) {
+        struct block_unit *bu = slice_get_ptr(&sr.sliceresult.slice, si);
+        if (sarray_size(&bu->domains) == 0) {
+            sr.result.status = ERROR_GENERIC;
+            sr.result.comment = "Blocks needs at least one domain each";
+        }
+    }
+
     fclose(config);
     free(buf);
-
-    if (blocklist->start == blocklist->stop) {
-        sr.result.status = ERROR_GENERIC;
-        sr.result.comment = "start time and stop time is the same";
-    }
 
     return sr;
 }
