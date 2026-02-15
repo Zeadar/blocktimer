@@ -186,7 +186,8 @@ SliceResult parse_config() {
         struct block_unit *bu = slice_get_ptr(&sr.sliceresult.slice, si);
         if (sarray_size(&bu->domains) == 0) {
             sr.result.status = ERROR_GENERIC;
-            sr.result.comment = "Blocks needs at least one domain each";
+            sr.result.comment = "[block]s needs at least one domain each";
+            return sr;
         }
     }
 
