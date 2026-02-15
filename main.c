@@ -48,7 +48,7 @@ void *scheduler(void *eu) {
                 del(event_unit);
                 sleep_time = event_unit->block_unit->start - now;
             }
-        } else {                // Spanning across days
+        } else if (event_unit->block_unit->start > event_unit->block_unit->stop) {      // Spanning across days
             if (now < event_unit->block_unit->stop) {
                 r = add(event_unit);
                 if (r.status == ERROR_ADDRINFO_TEMPORARY) {
@@ -72,6 +72,20 @@ void *scheduler(void *eu) {
                 del(event_unit);
                 sleep_time = event_unit->block_unit->start - now;
             }
+        } else {                // start == stop, on 24/7
+            del(event_unit);
+            r = add(event_unit);
+            if (r.status == ERROR_ADDRINFO_TEMPORARY) {
+                fprintf(stderr, F_TEMP_FAIL, WAIT_ON_FAIL_TIME_SEC);
+                sleep(WAIT_ON_FAIL_TIME_SEC);
+                continue;
+            }
+            handle_errors(&r, OK_GENERIC);
+            if (event_unit->block_unit->start < now)
+                sleep_time =
+                    (DAY_SEC - now) + event_unit->block_unit->start;
+            else
+                sleep_time = event_unit->block_unit->start - now;
         }
         if (is_not_root)
             printf("Sleeping for %.2d:%.2d:%.2d\n",

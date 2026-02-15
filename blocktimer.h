@@ -83,3 +83,4 @@ struct result add(struct event_unit *eu);
 void del(struct event_unit *eu);
 
 extern int is_not_root;
+extern pthread_mutex_t addr_lock;
