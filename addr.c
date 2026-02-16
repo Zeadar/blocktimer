@@ -4,8 +4,8 @@
 #include "blocktimer.h"
 #include "libmemhandle/libmemhandle.h"
 
-#define IPV4 "iptables"
-#define IPV6 "ip6tables"
+static const char ipv4[] = "iptables";
+static const char ipv6[] = "ip6tables";
 
 // static const char f_check_rule[] =
 //     "%s -C OUTPUT -d %s -j REJECT 2>/dev/null";
@@ -22,11 +22,11 @@ static void add_addr(char *k, void *v) {
     int ip_type = *(int *) v;
 
     if (ip_type == AF_INET) {
-        // sprintf(check, f_check_rule, IPV4, k);
-        sprintf(add, f_add_rule, IPV4, k);
+        // sprintf(check, f_check_rule, ipv4, k);
+        sprintf(add, f_add_rule, ipv4, k);
     } else {
-        // sprintf(check, f_check_rule, IPV6, k);
-        sprintf(add, f_add_rule, IPV6, k);
+        // sprintf(check, f_check_rule, ipv6, k);
+        sprintf(add, f_add_rule, ipv6, k);
     }
 
     if (is_not_root) {
@@ -38,7 +38,7 @@ static void add_addr(char *k, void *v) {
     ret = system(add);
     if (ret != 0) {
         fprintf(stderr, "%s exited abnormally (%d)...\n",
-                ip_type == AF_INET ? IPV4 : IPV6, ret);
+                ip_type == AF_INET ? ipv4 : ipv6, ret);
         exit(ret);
     }
 }
@@ -50,11 +50,11 @@ static void del_addr(char *k, void *v) {
     int ip_type = *(int *) v;
 
     if (ip_type == AF_INET) {
-        // sprintf(check, f_check_rule, IPV4, k);
-        sprintf(remove, f_remove_rule, IPV4, k);
+        // sprintf(check, f_check_rule, ipv4, k);
+        sprintf(remove, f_remove_rule, ipv4, k);
     } else {
-        // sprintf(check, f_check_rule, IPV6, k);
-        sprintf(remove, f_remove_rule, IPV6, k);
+        // sprintf(check, f_check_rule, ipv6, k);
+        sprintf(remove, f_remove_rule, ipv6, k);
     }
 
     if (is_not_root) {
@@ -66,7 +66,7 @@ static void del_addr(char *k, void *v) {
     ret = system(remove);
     if (ret != 0) {
         fprintf(stderr, "%s exited abnormally (%d)...\n",
-                ip_type == AF_INET ? IPV4 : IPV6, ret);
+                ip_type == AF_INET ? ipv4 : ipv6, ret);
         exit(ret);
     }
 }
@@ -82,12 +82,12 @@ struct result add(struct event_unit *eu) {
     pthread_mutex_lock(&addr_lock);
     mr = fetch_addresses(&eu->block_unit->domains);
     pthread_mutex_unlock(&addr_lock);
+
     if (mr.status != OK_MAP)
         return mr.result;
 
-    eu->addresses = mr.mapresult.map;
-
     pthread_mutex_lock(&addr_lock);
+    eu->addresses = mr.mapresult.map;
     hashy_foreach(&eu->addresses, add_addr);
     pthread_mutex_unlock(&addr_lock);
 
@@ -101,6 +101,6 @@ void del(struct event_unit *eu) {
 
     pthread_mutex_lock(&addr_lock);
     hashy_foreach(&eu->addresses, del_addr);
-    pthread_mutex_unlock(&addr_lock);
     hashy_destroy(&eu->addresses);
+    pthread_mutex_unlock(&addr_lock);
 }

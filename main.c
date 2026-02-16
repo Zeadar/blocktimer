@@ -171,7 +171,9 @@ void create_threads(void *eu) {
 
 void exit_handler(int sig) {
     printf("Recieved signal %d, exiting...\n", sig);
+    pthread_mutex_lock(&addr_lock);
     slice_foreach(&event_units, cancel_threads);
+    pthread_mutex_unlock(&addr_lock);
     // clear firewall
     for (slice_index si = 0; si != slice_size(&event_units); ++si) {
         struct event_unit *eu = slice_get_ptr(&event_units, si);
@@ -228,6 +230,8 @@ int main() {
         slice_foreach(&event_units, create_threads);
         wait_result = wait_for_wakeup();
         handle_errors(&wait_result, OK_GENERIC);
+        pthread_mutex_lock(&addr_lock);
         slice_foreach(&event_units, cancel_threads);
+        pthread_mutex_unlock(&addr_lock);
     }
 }
