@@ -187,21 +187,24 @@ void exit_handler(int sig) {
     ret = system("iptables -D OUTPUT -j blocktimer");
     if (ret != 0)
         exit(ret);
+    ret = system("iptables -D FORWARD -j blocktimer");
+    if (ret != 0)
+        exit(ret);
     ret = system("iptables -F blocktimer");
     if (ret != 0)
         exit(ret);
     ret = system("iptables -X blocktimer");
     if (ret != 0)
         exit(ret);
-    ret = system("ip6tables -D OUTPUT -j blocktimer");
-    if (ret != 0)
-        exit(ret);
-    ret = system("ip6tables -F blocktimer");
-    if (ret != 0)
-        exit(ret);
-    ret = system("ip6tables -X blocktimer");
-    if (ret != 0)
-        exit(ret);
+    // ret = system("ip6tables -D OUTPUT -j blocktimer");
+    // if (ret != 0)
+    //     exit(ret);
+    // ret = system("ip6tables -F blocktimer");
+    // if (ret != 0)
+    //     exit(ret);
+    // ret = system("ip6tables -X blocktimer");
+    // if (ret != 0)
+    //     exit(ret);
     // Uncomment ↓ to impress valgrind
     // slice_foreach(&event_units, destroy_addresses_in_event_units);
     // slice_destroy(&event_units);
@@ -242,12 +245,18 @@ int main() {
         sysret = system("iptables -I OUTPUT 1 -j blocktimer");
         if (sysret != 0)
             return sysret;
-        sysret = system("ip6tables -N blocktimer");
+        sysret = system("iptables -I FORWARD 1 -j blocktimer");
         if (sysret != 0)
             return sysret;
-        sysret = system("ip6tables -I OUTPUT 1 -j blocktimer");
-        if (sysret != 0)
-            return sysret;
+        // sysret = system("ip6tables -N blocktimer");
+        // if (sysret != 0)
+        //     return sysret;
+        // sysret = system("ip6tables -I OUTPUT 1 -j blocktimer");
+        // if (sysret != 0)
+        //     return sysret;
+        // sysret = system("ip6tables -I FORWARD 1 -j blocktimer");
+        // if (sysret != 0)
+        //     return sysret;
     }
     // debug
     // for (slice_index si = 0; si != slice_size(&config.sliceresult.slice);
