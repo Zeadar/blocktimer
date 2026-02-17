@@ -1,0 +1,11 @@
+[Unit]
+Description=Blocktimer ip block scheduler
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/blocktimer
+# Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+

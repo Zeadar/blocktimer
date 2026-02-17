@@ -1,3 +1,3 @@
-[submodule "libmemhandle"]
-	path = libmemhandle
+[submodule "src/libmemhandle"]
+	path = src/libmemhandle
 	url = git@github.com:Zeadar/libmemhandle.git
