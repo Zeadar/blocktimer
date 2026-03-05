@@ -1,5 +1,6 @@
 #include "blocktimer.h"
 #include "libmemhandle/libmemhandle.h"
+#include <arpa/inet.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,6 +14,8 @@
 #define START_EXPR "start="
 #define STOP_EXPR "stop="
 #define DOMAIN_EXPR "domain+="
+#define IPV4_EXPR "ipv4+="
+#define IPV6_EXPR "ipv6+="
 #define SKIP_EXPR "skipdays="
 
 static ptrdiff_t strip_fluff(char *line) {
@@ -51,6 +54,12 @@ static struct result get_type(char **buf) {
         *buf = buffer + len;
     } else if (strncmp(buffer, DOMAIN_EXPR, len = strlen(DOMAIN_EXPR)) == 0) {
         r.status = OK_TYPE_DOMAIN;
+        *buf = buffer + len;
+    } else if (strncmp(buffer, IPV4_EXPR, len = strlen(IPV4_EXPR)) == 0) {
+        r.status = OK_TYPE_IPV4;
+        *buf = buffer + len;
+    } else if (strncmp(buffer, IPV6_EXPR, len = strlen(IPV6_EXPR)) == 0) {
+        r.status = OK_TYPE_IPV6;
         *buf = buffer + len;
     } else if (strncmp(buffer, NEWBLOCK_EXPR, len = strlen(NEWBLOCK_EXPR)) ==
                0) {
@@ -152,6 +161,62 @@ static struct skipdays parse_days(char *buf) {
     return days;
 }
 
+static struct result validate_ip_or_cidr(const char *address, int family) {
+    struct result r = {0};
+    r.status = OK_GENERIC;
+    unsigned char addrbuf[sizeof(struct in6_addr)];
+    char *input = strdup(address);
+    char *slash;
+    int prefix_max = family == AF_INET ? 32 : 128;
+
+    if (!input) {
+        r.status = ERROR_GENERIC;
+        r.comment = "Out of memory while validating IP entry";
+        return r;
+    }
+
+    slash = strchr(input, '/');
+
+    if (slash) {
+        int prefix;
+        char *prefix_str = slash + 1;
+
+        *slash = '\0';
+
+        if (*input == '\0' || *prefix_str == '\0') {
+            r.status = ERROR_CONF_PARSE;
+            goto invalid;
+        }
+
+        for (char *c = prefix_str; *c != '\0'; ++c) {
+            if (*c < '0' || *c > '9') {
+                r.status = ERROR_CONF_PARSE;
+                goto invalid;
+            }
+        }
+
+        prefix = atoi(prefix_str);
+        if (prefix < 0 || prefix > prefix_max) {
+            r.status = ERROR_CONF_PARSE;
+            goto invalid;
+        }
+    }
+
+    if (inet_pton(family, input, addrbuf) != 1) {
+        r.status = ERROR_CONF_PARSE;
+    }
+
+invalid:
+    if (r.status != OK_GENERIC) {
+        char *err = malloc(strlen(address) + 64);
+        sprintf(err, "Invalid IP/CIDR entry [%s]", address);
+        r.comment = err;
+    }
+    free(input);
+
+    return r;
+}
+
 SliceResult parse_config(void) {
     FILE *config = fopen(LOCAL_CONF_NAME, "r");
     if (config == 0)
@@ -185,6 +250,8 @@ SliceResult parse_config(void) {
             blocklist = slice_allocate(&sr.sliceresult.slice);
             *blocklist = (const struct block_unit) {0};
             blocklist->domains = sarray_create();
+            blocklist->ipv4 = sarray_create();
+            blocklist->ipv6 = sarray_create();
             continue;
         }
 
@@ -209,6 +276,22 @@ SliceResult parse_config(void) {
         case OK_TYPE_DOMAIN:
             sarray_push(&blocklist->domains, temp_buf);
             break;
+        case OK_TYPE_IPV4:
+            r = validate_ip_or_cidr(temp_buf, AF_INET);
+            if (r.status != OK_GENERIC) {
+                sr.result = r;
+                return sr;
+            }
+            sarray_push(&blocklist->ipv4, temp_buf);
+            break;
+        case OK_TYPE_IPV6:
+            r = validate_ip_or_cidr(temp_buf, AF_INET6);
+            if (r.status != OK_GENERIC) {
+                sr.result = r;
+                return sr;
+            }
+            sarray_push(&blocklist->ipv6, temp_buf);
+            break;
         case OK_TYPE_SKIP:
             blocklist->days = parse_days(temp_buf);
             break;
@@ -220,9 +303,11 @@ SliceResult parse_config(void) {
 
     for (slice_index si = 0; si != slice_size(&sr.sliceresult.slice); ++si) {
         struct block_unit *bu = slice_get_ptr(&sr.sliceresult.slice, si);
-        if (sarray_size(&bu->domains) == 0) {
+        if (sarray_size(&bu->domains) == 0 && sarray_size(&bu->ipv4) == 0 &&
+            sarray_size(&bu->ipv6) == 0) {
             sr.result.status = ERROR_GENERIC;
-            sr.result.comment = "[block]s needs at least one domain each";
+            sr.result.comment =
+                "[block]s needs at least one domain/ip entry each";
             return sr;
         }
     }

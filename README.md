@@ -148,6 +148,12 @@ stop = 10:00
 domain += hamsterpaj.net
 domain += example.com
 
+# Optional: Add fixed IP entries (no DNS lookup)
+ipv4 += 1.1.1.1
+ipv6 += 2606:4700:4700::1111
+ipv4 += 10.0.0.0/24
+ipv6 += 2001:db8::/64
+
 # Optional: Days to skip (1-7 = Monday-Sunday)
 skipdays = [1,7]
 ```
@@ -206,6 +212,7 @@ skipdays = [5,6,7]  # Skip Friday, Saturday, Sunday
 
 - **Time Format**: 24-hour format (00:00 to 23:59)
 - **Domain Resolution**: Domains are resolved to IP addresses and added to firewall rules
+- **Literal IP Entries**: Use `ipv4 += ...` and `ipv6 += ...` for direct IP blocks (hosts or CIDR subnets)
 - **Midnight Wraparound**: If `start > stop`, blocking spans midnight (e.g., 22:00 to 06:00)
 - **24/7 Blocking**: When `start == stop`, domains are blocked all day (IPs updated at that time)
 - **Day Skipping**: When a skip day matches, the entire day is skipped - no filtering on that day

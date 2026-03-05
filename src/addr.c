@@ -14,6 +14,13 @@ static const char f_remove_rule[] = "%s -D blocktimer -d %s -j REJECT";
 
 extern pthread_mutex_t addr_lock;
 
+static void add_static_addresses(Map *map, const Sarray *addresses, int family) {
+  for (slice_index si = 0; si != sarray_size(addresses); ++si) {
+    char *ip = sarray_get(addresses, si);
+    hashy_set(map, ip, &family);
+  }
+}
+
 static void add_addr(char *k, void *v) {
   // char check[1024];
   char add[1024];
@@ -63,6 +70,8 @@ struct result add(struct event_unit *eu) {
 
   pthread_mutex_lock(&addr_lock);
   eu->addresses = mr.mapresult.map;
+  add_static_addresses(&eu->addresses, &eu->block_unit->ipv4, AF_INET);
+  add_static_addresses(&eu->addresses, &eu->block_unit->ipv6, AF_INET6);
   hashy_foreach(&eu->addresses, add_addr);
   pthread_mutex_unlock(&addr_lock);
 

@@ -10,6 +10,8 @@ enum status {
     OK_TYPE_START,
     OK_TYPE_STOP,
     OK_TYPE_DOMAIN,
+    OK_TYPE_IPV4,
+    OK_TYPE_IPV6,
     OK_TYPE_NEWBLOCK,
     OK_TYPE_SKIP,
     ERROR_GENERIC,
@@ -37,6 +39,8 @@ struct skipdays {
 
 struct block_unit {
     Sarray domains;
+    Sarray ipv4;
+    Sarray ipv6;
     int start;
     int stop;
     struct skipdays days;
