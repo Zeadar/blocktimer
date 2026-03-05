@@ -37,7 +37,7 @@ sudo ninja -C build install
 
 ### Optional Meson Install Flags
 
-- `-Dsystemd=true|false` install systemd service (default: `true`)
+- `-Dsystemd=true|false` install systemd service (default: `true` if systemd is detected)
 - `-Dopenrc=true|false` install OpenRC script (default: `false`)
 - `-Dconf=true|false` install `block.conf` template (default: `false`)
 
